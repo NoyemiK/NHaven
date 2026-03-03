@@ -11,6 +11,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Haven uses [Sema
 
 ---
 
+## [2.5.1] — 2026-03-02
+
+### Fixed
+- **Image uploaded to wrong channel** — switching channels while an upload was in progress caused the image to be sent to the newly active channel instead of the one it was uploaded from. The target channel is now captured before the async upload begins.
+- **Encrypted DM reply previews showed raw ciphertext** — the reply banner inside an encrypted DM showed garbled ciphertext instead of the decrypted message. The decrypt pass now also covers `replyContext.content`.
+- **Voice chat unusable after mobile screen timeout / app backgrounding** — losing network focus removed the user from voice on the server side but left stale state on the client, so the leave button appeared but neither leaving nor rejoining worked without a full page reload. The socket disconnect handler now resets local voice state so the UI clears correctly and auto-rejoin on reconnect works as expected.
+- **Custom emoji upload / delete restricted to admin only** — added a `manage_emojis` role permission. Admins can grant it to any role, giving those users the ability to upload and delete custom emojis and access the Emojis settings tab without needing full server admin.
+
+---
+
 ## [2.5.0] — 2026-03-01
 
 ### Added
