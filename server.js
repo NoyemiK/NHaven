@@ -833,6 +833,15 @@ app.post('/api/install-flash-roms', async (req, res) => {
 
 // (duplicate avatar handler removed — handled above at /api/upload-avatar)
 
+// ── Built-in sounds (bundled with Haven, always available) ────
+const BUILTIN_SOUNDS = [
+  { name: 'AOL - Door Open',       url: '/sounds/aol_door_open.mp3',   builtin: true },
+  { name: 'AOL - Door Close',      url: '/sounds/aol_door_close.mp3',  builtin: true },
+  { name: "AOL - You've Got Mail", url: '/sounds/aol_got_mail.mp3',    builtin: true },
+  { name: 'AOL - Message',         url: '/sounds/aol_message.mp3',     builtin: true },
+  { name: 'AOL - Files Done',      url: '/sounds/aol_filesdone.mp3',   builtin: true },
+];
+
 // ── Sound upload (admin only, wav/mp3/ogg, max 1 MB) ────
 const soundUpload = multer({
   storage: uploadStorage,
@@ -873,9 +882,10 @@ app.get('/api/sounds', (req, res) => {
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   const { getDb } = require('./src/database');
   try {
-    const sounds = getDb().prepare('SELECT name, filename FROM custom_sounds ORDER BY name').all();
-    res.json({ sounds: sounds.map(s => ({ name: s.name, url: `/uploads/${s.filename}` })) });
-  } catch { res.json({ sounds: [] }); }
+    const custom = getDb().prepare('SELECT name, filename FROM custom_sounds ORDER BY name').all();
+    const customList = custom.map(s => ({ name: s.name, url: `/uploads/${s.filename}` }));
+    res.json({ sounds: [...BUILTIN_SOUNDS, ...customList] });
+  } catch { res.json({ sounds: [...BUILTIN_SOUNDS] }); }
 });
 
 app.delete('/api/sounds/:name', (req, res) => {
@@ -883,6 +893,7 @@ app.delete('/api/sounds/:name', (req, res) => {
   const user = token ? verifyToken(token) : null;
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   if (!verifyAdminFromDb(user) && !userHasPermission(user.id, 'manage_soundboard')) return res.status(403).json({ error: 'Requires admin or Manage Soundboard permission' });
+  if (BUILTIN_SOUNDS.some(s => s.name === req.params.name)) return res.status(403).json({ error: 'Cannot delete built-in sounds' });
   const name = req.params.name;
   const { getDb } = require('./src/database');
   try {
@@ -901,6 +912,7 @@ app.patch('/api/sounds/:name', (req, res) => {
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   if (!verifyAdminFromDb(user) && !userHasPermission(user.id, 'manage_soundboard')) return res.status(403).json({ error: 'Requires admin or Manage Soundboard permission' });
   const oldName = req.params.name;
+  if (BUILTIN_SOUNDS.some(s => s.name === oldName)) return res.status(403).json({ error: 'Cannot rename built-in sounds' });
   let newName = (req.body.newName || '').trim().replace(/[^a-zA-Z0-9 _-]/g, '').replace(/\s+/g, ' ').trim();
   if (!newName || newName.length > 30) return res.status(400).json({ error: 'Invalid new name' });
   const { getDb } = require('./src/database');

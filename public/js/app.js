@@ -4287,11 +4287,29 @@ class HavenApp {
       const noneOpt = sel.querySelector('option[value="none"]');
 
       // Add custom sounds optgroup
-      if (sounds.length > 0) {
+      const builtins = sounds.filter(s => s.builtin);
+      const customs  = sounds.filter(s => !s.builtin);
+
+      if (builtins.length > 0) {
+        const builtinGroup = document.createElement('optgroup');
+        builtinGroup.label = '🎙️ Built-in';
+        builtinGroup.dataset.customGroup = '1';
+        builtins.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = `custom:${s.name}`;
+          opt.textContent = s.name;
+          opt.dataset.custom = '1';
+          opt.dataset.url = s.url;
+          builtinGroup.appendChild(opt);
+        });
+        sel.insertBefore(builtinGroup, noneOpt);
+      }
+
+      if (customs.length > 0) {
         const customGroup = document.createElement('optgroup');
         customGroup.label = '🎵 Custom';
         customGroup.dataset.customGroup = '1';
-        sounds.forEach(s => {
+        customs.forEach(s => {
           const opt = document.createElement('option');
           opt.value = `custom:${s.name}`;
           opt.textContent = s.name;
@@ -4311,19 +4329,38 @@ class HavenApp {
     const list = document.getElementById('custom-sounds-list');
     if (!list) return;
 
-    if (sounds.length === 0) {
+    const builtins = sounds.filter(s => s.builtin);
+    const custom   = sounds.filter(s => !s.builtin);
+
+    if (builtins.length === 0 && custom.length === 0) {
       list.innerHTML = '<p class="muted-text">No custom sounds uploaded</p>';
       return;
     }
 
-    list.innerHTML = sounds.map(s => `
-      <div class="custom-sound-item" data-name="${this._escapeHtml(s.name)}">
-        <span class="custom-sound-name">${this._escapeHtml(s.name)}</span>
-        <button class="btn-xs sound-preview-btn" data-url="${this._escapeHtml(s.url)}" title="Preview">▶</button>
-        <button class="btn-xs sound-rename-btn" data-name="${this._escapeHtml(s.name)}" title="Rename">✏️</button>
-        <button class="btn-xs sound-delete-btn" data-name="${this._escapeHtml(s.name)}" title="Delete">🗑️</button>
-      </div>
-    `).join('');
+    const builtinHtml = builtins.length === 0 ? '' : `
+      <p class="muted-text" style="margin:4px 0 2px;font-size:0.78em;text-transform:uppercase;letter-spacing:.06em">Built-in</p>
+      ${builtins.map(s => `
+        <div class="custom-sound-item" data-name="${this._escapeHtml(s.name)}">
+          <span class="custom-sound-name">${this._escapeHtml(s.name)}</span>
+          <button class="btn-xs sound-preview-btn" data-url="${this._escapeHtml(s.url)}" title="Preview">▶</button>
+          <span class="muted-text" style="font-size:0.75em;margin-left:4px" title="Built-in sound — cannot be removed">🔒</span>
+        </div>
+      `).join('')}
+    `;
+
+    const customHtml = custom.length === 0 ? '' : `
+      <p class="muted-text" style="margin:8px 0 2px;font-size:0.78em;text-transform:uppercase;letter-spacing:.06em">Custom</p>
+      ${custom.map(s => `
+        <div class="custom-sound-item" data-name="${this._escapeHtml(s.name)}">
+          <span class="custom-sound-name">${this._escapeHtml(s.name)}</span>
+          <button class="btn-xs sound-preview-btn" data-url="${this._escapeHtml(s.url)}" title="Preview">▶</button>
+          <button class="btn-xs sound-rename-btn" data-name="${this._escapeHtml(s.name)}" title="Rename">✏️</button>
+          <button class="btn-xs sound-delete-btn" data-name="${this._escapeHtml(s.name)}" title="Delete">🗑️</button>
+        </div>
+      `).join('')}
+    `;
+
+    list.innerHTML = builtinHtml + customHtml;
 
     // Preview buttons
     list.querySelectorAll('.sound-preview-btn').forEach(btn => {
@@ -4522,8 +4559,10 @@ class HavenApp {
       { value: 'none', label: 'None' },
     ];
     const customs = (this.customSounds || []).map(s => ({
-      value: `custom:${s.name}`, label: s.name, url: s.url, isCustom: true
+      value: `custom:${s.name}`, label: s.name, url: s.url, builtin: !!s.builtin
     }));
+    const fileBuiltins = customs.filter(s => s.builtin);
+    const userCustoms  = customs.filter(s => !s.builtin);
 
     const events = [
       { selectId: 'assign-msg-sound', event: 'message', notifSelect: 'notif-msg-sound' },
@@ -4549,10 +4588,23 @@ class HavenApp {
       });
       sel.appendChild(builtinGroup);
 
-      if (customs.length > 0) {
+      if (fileBuiltins.length > 0) {
+        const fbGroup = document.createElement('optgroup');
+        fbGroup.label = '🎙️ Sounds';
+        fileBuiltins.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.value;
+          opt.textContent = s.label;
+          opt.dataset.url = s.url;
+          fbGroup.appendChild(opt);
+        });
+        sel.appendChild(fbGroup);
+      }
+
+      if (userCustoms.length > 0) {
         const customGroup = document.createElement('optgroup');
         customGroup.label = '🎵 Custom';
-        customs.forEach(s => {
+        userCustoms.forEach(s => {
           const opt = document.createElement('option');
           opt.value = s.value;
           opt.textContent = s.label;

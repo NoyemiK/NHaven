@@ -11,6 +11,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Haven uses [Sema
 
 ---
 
+## [2.5.3] — 2026-03-03
+
+### Added
+- **Built-in AOL sounds** — five classic AOL audio cues are now bundled with Haven and appear in every server's soundboard and notification dropdowns automatically, with no upload required: *Door Open*, *Door Close*, *You've Got Mail*, *Message*, and *Files Done*. The files live in `public/sounds/` and are served as static assets; they appear at the top of the sound list with a 🔒 indicator and cannot be deleted or renamed.
+
+---
+
 ## [2.5.2] — 2026-03-03
 
 ### Added
