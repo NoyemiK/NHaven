@@ -63,11 +63,22 @@ function generateCustomPalette(h, s, v, vibrancy) {
 }
 
 // ── Apply / clear custom theme CSS variables ────────────
+// Uses a dedicated <style> element so all 25 variables are written in a
+// single textContent swap — one style recalculation instead of 25
+// individual setProperty calls that each dirty the computed-style cache.
+let _themeStyleEl = null;
 function applyCustomVars(palette) {
-  const el = document.documentElement;
-  Object.entries(palette).forEach(([k, v]) => el.style.setProperty(k, v));
+  if (!_themeStyleEl) {
+    _themeStyleEl = document.createElement('style');
+    _themeStyleEl.id = '_haven_theme_vars';
+    document.head.appendChild(_themeStyleEl);
+  }
+  const rules = Object.entries(palette).map(([k, v]) => `${k}:${v}`).join(';');
+  _themeStyleEl.textContent = `:root{${rules}}`;
 }
 function clearCustomVars() {
+  if (_themeStyleEl) { _themeStyleEl.textContent = ''; }
+  // Also remove any leftover inline custom properties (legacy path)
   const keys = ['--accent','--accent-hover','--accent-dim','--accent-glow',
     '--bg-primary','--bg-secondary','--bg-tertiary','--bg-hover','--bg-active',
     '--bg-input','--bg-card','--text-primary','--text-secondary','--text-muted',

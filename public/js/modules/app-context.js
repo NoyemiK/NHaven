@@ -851,4 +851,34 @@ _setLed(id, state) {
   el.className = 'led ' + state;
 },
 
+// ── Performance diagnostics ────────────────────────────
+// Toggle from console:  app._perfMonitor(true);  / app._perfMonitor(false);
+_perfMonitor(enable) {
+  if (!enable) {
+    if (this._perfRAF) cancelAnimationFrame(this._perfRAF);
+    this._perfRAF = null;
+    const hud = document.getElementById('_perf_hud');
+    if (hud) hud.remove();
+    return;
+  }
+  if (this._perfRAF) return; // already running
+  const hud = document.createElement('div');
+  hud.id = '_perf_hud';
+  hud.style.cssText = 'position:fixed;top:4px;right:4px;z-index:999999;background:rgba(0,0,0,.8);color:#0f0;font:12px monospace;padding:4px 8px;border-radius:4px;pointer-events:none';
+  document.body.appendChild(hud);
+  let frames = 0, lastSec = performance.now();
+  const tick = (now) => {
+    this._perfRAF = requestAnimationFrame(tick);
+    frames++;
+    if (now - lastSec >= 1000) {
+      const fps = Math.round(frames * 1000 / (now - lastSec));
+      const mem = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : '?';
+      hud.textContent = `FPS: ${fps}  Heap: ${mem} MB  DOM: ${document.querySelectorAll('*').length}`;
+      frames = 0;
+      lastSec = now;
+    }
+  };
+  this._perfRAF = requestAnimationFrame(tick);
+},
+
 };
