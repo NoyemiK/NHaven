@@ -2,108 +2,113 @@ export default {
 
 // ── Channel Management ────────────────────────────────
 
-async switchChannel(code) {
-  if (this.currentChannel === code) return;
+    async switchChannel(code) {
+        if (this.currentChannel === code) return;
 
-  // Clear any pending image queue from previous channel
-  this._clearImageQueue();
+        // Clear any pending image queue from previous channel
+        this._clearImageQueue();
 
-  // Voice persists across channel switches — no auto-disconnect
+        // Clears the unread message count
+        const cc = this.channels.findIndex(c => c.code === code);
+        this.channels[cc].unreadCount = 0;
 
-  this.currentChannel = code;
-  this._coupledToBottom = true;
-  const channel = this.channels.find(c => c.code === code);
-  const isDm = channel && channel.is_dm;
-  const displayName = isDm && channel.dm_target
-    ? `@ ${this._getNickname(channel.dm_target.id, channel.dm_target.username)}`
-    : channel ? `# ${channel.name}` : code;
+        // Voice persists across channel switches — no auto-disconnect
 
-  document.getElementById('channel-header-name').textContent = displayName;
-  // Clear scramble cache so the effect picks up the new channel name
-  const headerEl = document.getElementById('channel-header-name');
-  if (headerEl) { delete headerEl.dataset.originalText; headerEl._scrambling = false; }
-  const displayCode = channel ? (channel.display_code || code) : code;
-  const isMaskedCode = (displayCode === '••••••••');
-  document.getElementById('channel-code-display').textContent = isDm ? '' : displayCode;
-  document.getElementById('copy-code-btn').style.display = (isDm || isMaskedCode) ? 'none' : 'inline-flex';
+        this.currentChannel = code;
 
-  // Show channel code settings gear for admins / users with create_channel on non-DM channels
-  const codeSettingsBtn = document.getElementById('channel-code-settings-btn');
-  if (codeSettingsBtn) {
-    codeSettingsBtn.style.display = (!isDm && (this.user.isAdmin || this._hasPerm('create_channel'))) ? 'inline-flex' : 'none';
-  }
+        this._coupledToBottom = true;
+        const channel = this.channels.find(c => c.code === code);
+        const isDm = channel && channel.is_dm;
+        const displayName = isDm && channel.dm_target
+            ? `@ ${this._getNickname(channel.dm_target.id, channel.dm_target.username)}`
+            : channel ? `# ${channel.name}` : code;
 
-  // Show the header actions box
-  const actionsBox = document.getElementById('header-actions-box');
-  if (actionsBox) actionsBox.style.display = 'flex';
-  // Update voice button state — persist controls if in voice anywhere
-  if (this.voice && this.voice.inVoice) {
-    this._updateVoiceButtons(true);
-  } else {
-    // Show just the join button (not the indicator), but hide it for text-only channels
-    const _scJoinBtn = document.getElementById('voice-join-btn');
-    if (_scJoinBtn) _scJoinBtn.style.display = channel && channel.channel_type === 'text' ? 'none' : 'inline-flex';
-    const indic = document.getElementById('voice-active-indicator');
-    if (indic) indic.style.display = 'none';
-    const vp = document.getElementById('voice-panel');
-    if (vp) vp.style.display = 'none';
-    const mobileJoin = document.getElementById('voice-join-mobile');
-    if (mobileJoin) mobileJoin.style.display = channel && channel.channel_type === 'text' ? 'none' : '';
-  }
-  document.getElementById('search-toggle-btn').style.display = '';
-  document.getElementById('pinned-toggle-btn').style.display = '';
+        document.getElementById('channel-header-name').textContent = displayName;
+        // Clear scramble cache so the effect picks up the new channel name
+        const headerEl = document.getElementById('channel-header-name');
+        if (headerEl) { delete headerEl.dataset.originalText; headerEl._scrambling = false; }
+        const displayCode = channel ? (channel.display_code || code) : code;
+        const isMaskedCode = (displayCode === '••••••••');
+        document.getElementById('channel-code-display').textContent = isDm ? '' : displayCode;
+        document.getElementById('copy-code-btn').style.display = (isDm || isMaskedCode) ? 'none' : 'inline-flex';
 
-  // Show/hide topic bar
-  this._updateTopicBar(channel?.topic || '');
+        // Show channel code settings gear for admins / users with create_channel on non-DM channels
+        const codeSettingsBtn = document.getElementById('channel-code-settings-btn');
+        if (codeSettingsBtn) {
+            codeSettingsBtn.style.display = (!isDm && (this.user.isAdmin || this._hasPerm('create_channel'))) ? 'inline-flex' : 'none';
+        }
 
-  // Show/hide message input for voice-only channels
-  const msgInputArea = document.getElementById('message-input-area');
-  if (msgInputArea) msgInputArea.style.display = channel && channel.channel_type === 'voice' ? 'none' : '';
+        // Show the header actions box
+        const actionsBox = document.getElementById('header-actions-box');
+        if (actionsBox) actionsBox.style.display = 'flex';
+        // Update voice button state — persist controls if in voice anywhere
+        if (this.voice && this.voice.inVoice) {
+            this._updateVoiceButtons(true);
+        } else {
+            // Show just the join button (not the indicator), but hide it for text-only channels
+            const _scJoinBtn = document.getElementById('voice-join-btn');
+            if (_scJoinBtn) _scJoinBtn.style.display = channel && channel.channel_type === 'text' ? 'none' : 'inline-flex';
+            const indic = document.getElementById('voice-active-indicator');
+            if (indic) indic.style.display = 'none';
+            const vp = document.getElementById('voice-panel');
+            if (vp) vp.style.display = 'none';
+            const mobileJoin = document.getElementById('voice-join-mobile');
+            if (mobileJoin) mobileJoin.style.display = channel && channel.channel_type === 'text' ? 'none' : '';
+        }
+        document.getElementById('search-toggle-btn').style.display = '';
+        document.getElementById('pinned-toggle-btn').style.display = '';
 
-  const messagesEl = document.getElementById('messages');
-  messagesEl.innerHTML = '';
-  document.getElementById('message-area').style.display = 'flex';
-  document.getElementById('no-channel-msg').style.display = 'none';
+        // Show/hide topic bar
+        this._updateTopicBar(channel?.topic || '');
 
-  document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
-  const activeEl = document.querySelector(`.channel-item[data-code="${code}"]`);
-  if (activeEl) activeEl.classList.add('active');
+        // Show/hide message input for voice-only channels
+        const msgInputArea = document.getElementById('message-input-area');
+        if (msgInputArea) msgInputArea.style.display = channel && channel.channel_type === 'voice' ? 'none' : '';
 
-  this.unreadCounts[code] = 0;
-  this._updateBadge(code);
+        const messagesEl = document.getElementById('messages');
+        messagesEl.innerHTML = '';
+        document.getElementById('message-area').style.display = 'flex';
+        document.getElementById('no-channel-msg').style.display = 'none';
 
-  document.getElementById('status-channel').textContent = isDm && channel.dm_target
-    ? `DM: ${channel.dm_target.username}` : channel ? channel.name : code;
+        document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+        const activeEl = document.querySelector(`.channel-item[data-code="${code}"]`);
+        if (activeEl) activeEl.classList.add('active');
 
-  // Reset pagination state for the new channel
-  this._oldestMsgId = null;
-  this._noMoreHistory = false;
-  this._loadingHistory = false;
-  this._historyBefore = null;
-  this._newestMsgId = null;
-  this._noMoreFuture = true;
-  this._loadingFuture = false;
-  this._historyAfter = null;
+        this.unreadCounts[code] = 0;
+        this._updateBadge(code);
 
-  this.socket.emit('enter-channel', { code });
-  // E2E: fetch DM partner's public key BEFORE requesting messages
-  if (isDm && channel) await this._fetchDMPartnerKey(channel);
-  this.socket.emit('get-messages', { code });
-  this.socket.emit('get-channel-members', { code });
-  this.socket.emit('request-voice-users', { code });
-  this._clearReply();
+        document.getElementById('status-channel').textContent = isDm && channel.dm_target
+            ? `DM: ${channel.dm_target.username}` : channel ? channel.name : code;
 
-  // Auto-focus the message input for quick typing
-  const msgInput = document.getElementById('message-input');
-  if (msgInput) setTimeout(() => msgInput.focus(), 50);
+        // Reset pagination state for the new channel
+        this._oldestMsgId = null;
+        this._noMoreHistory = false;
+        this._loadingHistory = false;
+        this._historyBefore = null;
+        this._newestMsgId = null;
+        this._noMoreFuture = true;
+        this._loadingFuture = false;
+        this._historyAfter = null;
 
-  // Show E2E encryption menu only in DM channels
-  const e2eWrapper = document.getElementById('e2e-menu-wrapper');
-  if (e2eWrapper) e2eWrapper.style.display = isDm ? '' : 'none';
-  // Close dropdown when switching channels
-  const e2eDropdown = document.getElementById('e2e-dropdown');
-  if (e2eDropdown) e2eDropdown.style.display = 'none';
-},
+        this.socket.emit('enter-channel', { code });
+        // E2E: fetch DM partner's public key BEFORE requesting messages
+        if (isDm && channel) await this._fetchDMPartnerKey(channel);
+        this.socket.emit('get-messages', { code });
+        this.socket.emit('get-channel-members', { code });
+        this.socket.emit('request-voice-users', { code });
+        this._clearReply();
+
+        // Auto-focus the message input for quick typing
+        const msgInput = document.getElementById('message-input');
+        if (msgInput) setTimeout(() => msgInput.focus(), 50);
+
+        // Show E2E encryption menu only in DM channels
+        const e2eWrapper = document.getElementById('e2e-menu-wrapper');
+        if (e2eWrapper) e2eWrapper.style.display = isDm ? '' : 'none';
+        // Close dropdown when switching channels
+        const e2eDropdown = document.getElementById('e2e-dropdown');
+        if (e2eDropdown) e2eDropdown.style.display = 'none';
+    },
 
 _updateTopicBar(topic) {
   let bar = document.getElementById('channel-topic-bar');
