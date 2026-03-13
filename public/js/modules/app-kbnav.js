@@ -6,7 +6,6 @@ export default {
     // |
     // ---------
 
-    //TODO(Yemita): Figure out why it doesn't clear the unread flag on these channels
     _nextUnread(num)
     {
         Object.keys(this.unreadCounts).forEach(key => {

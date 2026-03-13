@@ -59,6 +59,26 @@ export default {
                     this._hideSlashDropdown();
                     return;
                 }
+                // GOTO a channel type in a partial name to <goto> the first match!
+                if (cmd === 'goto') {
+                    if (!arg) {
+                        this._showToast('Usage: /goto <channel name/DM>', 'error');
+                    } else {
+                        let cc = this.channels.filter(c => c.name.toLowerCase().includes(arg) ||
+                            (c.is_dm && c.dm_target.username.toLowerCase().includes(arg))
+                        );
+                        if (cc.length <= 0) {
+                            this._showToast(`No channel matching "${arg}"`, 'error');
+                        } else {
+                            this.switchChannel(cc[0].code);
+                        }
+                    }
+                    input.value = '';
+                    input.style.height = 'auto';
+                    this._hideMentionDropdown();
+                    this._hideSlashDropdown();
+                    return;
+                }
             }
         }
 

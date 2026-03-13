@@ -68,17 +68,6 @@ export default {
                 this._sendMessage();
             }
 
-            if (e.altKey && !e.shiftKey) {
-                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    this._nextChannel(e.key === 'ArrowDown' ? 1 : -1);
-                }
-            }
-            if (e.altKey && e.shiftKey) {
-                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    this._nextUnread(e.key === 'ArrowDown' ? 1 : -1);
-                }
-            }
-
         });
 
         msgInput.addEventListener('input', () => {
@@ -1033,6 +1022,26 @@ export default {
                 document.getElementById('theme-popup').style.display = 'none';
                 document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
             }
+
+            // Alt up/dn: next channel (no DM)
+            // Shift-Alt up/dn next unread channel
+            if (e.altKey && !e.shiftKey) {
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    this._nextChannel(e.key === 'ArrowDown' ? 1 : -1);
+                    document.getElementById('search-container').style.display = 'none';
+                    document.getElementById('search-results-panel').style.display = 'none';
+                    document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+                }
+            }
+            if (e.altKey && e.shiftKey) {
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    this._nextUnread(e.key === 'ArrowDown' ? 1 : -1);
+                    document.getElementById('search-container').style.display = 'none';
+                    document.getElementById('search-results-panel').style.display = 'none';
+                    document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+                }
+            }
+
         });
 
         // Theme popup toggle
