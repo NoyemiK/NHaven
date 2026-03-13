@@ -22,7 +22,7 @@ export default {
             }
         }
         channel_list = channel_list.concat(dm_channels);
-        channel_list = channel_list.filter(c => c.code === this.currentChannel || c.unreadCount > 1);
+        channel_list = channel_list.filter(c => c.code === this.currentChannel || c.unreadCount >= 1);
         let current_channel = channel_list.findIndex(c => c.code === this.currentChannel);
         if (channel_list.length <= 1) { return; }
 
