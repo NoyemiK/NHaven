@@ -64,11 +64,12 @@ export default {
                     if (!arg) {
                         this._showToast('Usage: /goto <channel name/DM>', 'error');
                     } else {
-                        let cc = this.channels.filter(c => c.name.toLowerCase().includes(arg) ||
-                            (c.is_dm && c.dm_target.username.toLowerCase().includes(arg))
+                        let val = arg.toLowerCase()
+                        let cc = this.channels.filter(c => c.name.toLowerCase().includes(val) ||
+                            (c.is_dm && c.dm_target.username.toLowerCase().includes(val))
                         );
                         if (cc.length <= 0) {
-                            this._showToast(`No channel matching "${arg}"`, 'error');
+                            this._showToast(`No channel matching "${val}"`, 'error');
                         } else {
                             this.switchChannel(cc[0].code);
                         }
