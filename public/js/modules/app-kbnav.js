@@ -9,6 +9,10 @@ export default {
     //TODO(Yemita): Figure out why it doesn't clear the unread flag on these channels
     _nextUnread(num)
     {
+        Object.keys(this.unreadCounts).forEach(key => {
+            let cc = this.channels.findIndex(c => c.code === key);
+            this.channels[cc].unreadCount = this.unreadCounts[key];
+        });
         let parent_channels = this.channels.filter(c => !c.is_dm && !c.parent_channel_id);
         let subchannels = this.channels.filter(c => !c.is_dm && c.parent_channel_id);
         let dm_channels = this.channels.filter(c => c.is_dm > 0);
@@ -38,6 +42,10 @@ export default {
 
     _nextChannel(num)
     {
+        Object.keys(this.unreadCounts).forEach(key => {
+            let cc = this.channels.findIndex(c => c.code === key);
+            this.channels[cc].unreadCount = this.unreadCounts[key];
+        });
         let parent_channels = this.channels.filter(c => !c.is_dm && !c.parent_channel_id);
         let subchannels = this.channels.filter(c => !c.is_dm && c.parent_channel_id);
         subchannels = subchannels.sort((a,b) => a.position - b.position);
