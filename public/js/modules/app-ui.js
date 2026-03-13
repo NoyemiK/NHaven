@@ -68,28 +68,14 @@ export default {
                 this._sendMessage();
             }
 
-            if (e.altKey) {
+            if (e.altKey && !e.shiftKey) {
                 if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    let parent_channels = this.channels.filter(c => !c.is_dm && !c.parent_channel_id);
-                    let subchannels = this.channels.filter(c => !c.is_dm && c.parent_channel_id);
-                    subchannels = subchannels.sort((a,b) => a.position - b.position);
-                    subchannels = subchannels.sort((a,b) => a.parent_channel_id - b.parent_channel_id);
-                    let channel_list = [];
-                    for (const elem in parent_channels) {
-                        channel_list.push(parent_channels[elem]);
-                        for (let idx = 0; idx < subchannels.length; ++idx) {
-                            if (subchannels[idx].parent_channel_id === parent_channels[elem].id) { channel_list.push(subchannels[idx]); }
-                        }
-                    }
-                    let current_channel = channel_list.findIndex(c => c.code === this.currentChannel);
-                    let next_channel = current_channel + (e.key === 'ArrowDown' ? 1 : -1);
-                    if (next_channel < 0 || current_channel === -1) {
-                        next_channel = channel_list.length - 1;
-                    }
-                    if (next_channel >= channel_list.length) {
-                        next_channel = 0;
-                    }
-                    this.switchChannel(channel_list[next_channel].code)
+                    this._nextChannel(e.key === 'ArrowDown' ? 1 : -1);
+                }
+            }
+            if (e.altKey && e.shiftKey) {
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    this._nextUnread(e.key === 'ArrowDown' ? 1 : -1);
                 }
             }
 

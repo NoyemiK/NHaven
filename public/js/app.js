@@ -15,6 +15,7 @@ import VoiceMethods    from './modules/app-voice.js?v=2.7.10';
 import UtilityMethods  from './modules/app-utilities.js?v=2.7.9';
 import AdminMethods    from './modules/app-admin.js?v=2.7.0';
 import PlatformMethods from './modules/app-platform.js?v=2.7.8';
+import KeyboardNavMethods from './modules/app-kbnav.js?v=2.7.10';
 
 class HavenApp {
     constructor() {
@@ -237,6 +238,7 @@ Object.assign(HavenApp.prototype,
     UtilityMethods,
     AdminMethods,
     PlatformMethods,
+    KeyboardNavMethods
 );
 
 // ── Boot ───────────────────────────────────────────────
