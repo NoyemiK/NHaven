@@ -1020,6 +1020,7 @@ export default {
                 document.getElementById('search-container').style.display = 'none';
                 document.getElementById('search-results-panel').style.display = 'none';
                 document.getElementById('theme-popup').style.display = 'none';
+                document.getElementById('quick-switcher-overlay')?.remove();
                 document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
             }
 
@@ -1027,19 +1028,28 @@ export default {
             // Shift-Alt up/dn next unread channel
             if (e.altKey && !e.shiftKey) {
                 if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
                     this._nextChannel(e.key === 'ArrowDown' ? 1 : -1);
                     document.getElementById('search-container').style.display = 'none';
                     document.getElementById('search-results-panel').style.display = 'none';
+                    document.getElementById('quick-switcher-overlay')?.remove();
                     document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
                 }
             }
             if (e.altKey && e.shiftKey) {
                 if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
                     this._nextUnread(e.key === 'ArrowDown' ? 1 : -1);
                     document.getElementById('search-container').style.display = 'none';
                     document.getElementById('search-results-panel').style.display = 'none';
+                    document.getElementById('quick-switcher-overlay')?.remove();
                     document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
                 }
+            }
+            // <C-k> quick switcher
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                this._openQuickSwitcher();
             }
 
         });

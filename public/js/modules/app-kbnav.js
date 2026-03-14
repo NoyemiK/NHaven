@@ -65,6 +65,86 @@ export default {
             next_channel = 0;
         }
         this.switchChannel(channel_list[next_channel].code);
-    }
+    },
 
+    _openQuickSwitcher() {
+        document.getElementById('quick-switcher-overlay')?.remove();
+
+        let overlay = document.createElement('div');
+        overlay.id = 'quick-switcher-overlay';
+        overlay.innerHTML = `
+            <div class="quick-switcher-box">
+                <input type="text" id="quick-switcher-input" placeholder="Goto channel ..." autocomplete="off" spellcheck="false">
+                <div id="quick-switcher-results"></div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const input = overlay.querySelector('#quick-switcher-input');
+        let results = overlay.querySelector('#quick-switcher-results');
+        let selection_idx = 0;
+
+        let channel_list = (this.channels || []).map(c => ({
+            code: c.code,
+            name: c.is_dm && c.dm_target
+            ? `@ ${this._getNickname(c.dm_target.id, c.dm_target.username)}`
+            : `# ${c.name}`,
+            is_dm: c.is_dm,
+            unread: this.unreadCounts[c.code] || 0,
+        }));
+
+        const render = (query) => {
+            const q = query.toLowerCase();
+            const filtered = q
+                ? channel_list.filter(c => c.name.toLowerCase().includes(q))
+                : channel_list.filter(c => c.unread > 0).concat(
+                    channel_list.filter(c => c.unread === 0)
+            );
+
+            const shown = filtered.slice(0, 12);
+            selection_idx = Math.min(selection_idx, Math.max(0, shown.length - 1));
+            results.innerHTML = shown.map((c, i) => `
+                <div class="quick-switcher-item${i === selection_idx ? ' selected' : ''}" data-code="${this._escapeHtml(c.code)}">
+                    <span class="qs-name">${this._escapeHtml(c.name)}</span>
+                    ${c.unread > 0 ? `<span class="qs-badge">${c.unread > 99 ? '99+' : c.unread}</span>` : ''}
+                </div>
+            `).join('');
+            results.querySelectorAll('.quick-switcher-item').forEach(e => {
+                e.addEventListener('click', () => {
+                    this.switchChannel(e.dataset.code);
+                    overlay.remove();
+                });
+            });
+        };
+
+        input.addEventListener('input', () => {
+            selection_idx = 0;
+            render(input.value);
+        });
+        input.addEventListener('keydown', (e) => {
+            const items = results.querySelectorAll('.quick-switcher-item');
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const dir = (e.key === 'ArrowDown' ? 1 : -1);
+                if (dir === 1) { selection_idx = Math.min(selection_idx + dir, items.length - 1) }
+                else if (dir === -1) { selection_idx = Math.max(selection_idx + dir, 0) }
+                render(input.value);
+            }
+            else if (e.key === 'Enter'){
+                e.preventDefault();
+                const selection = items[selection_idx];
+                if (selection) {
+                    this.switchChannel(selection.dataset.code);
+                    overlay.remove();
+                }
+            }
+        });
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
+
+        render('');
+        setTimeout(() => input.focus(), 10);
+    }
 }

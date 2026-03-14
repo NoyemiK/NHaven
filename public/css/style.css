@@ -14144,33 +14144,99 @@ tap-to-reveal "⋯" toolbar fallback
     /* ── Selected message: show toolbar inside the message, top-right ──
     Using top: 4px instead of a negative offset keeps the toolbar within
     the .messages scroll container so it is never clipped. */
-.msg-selected .msg-toolbar {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    left: auto;
+    .msg-selected .msg-toolbar {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        left: auto;
+    }
+    .msg-selected {
+        position: relative;
+    }
+    /* Hide the inline compact-time to avoid overlap */
+    .msg-selected.message-compact .compact-time {
+        display: none !important;
+    }
+    /* Show timestamp BELOW selected compact messages ONLY
+    (regular messages already show time in the header) */
+    .msg-selected.message-compact {
+        padding-bottom: 22px !important;
+    }
+    .msg-selected.message-compact::after {
+        content: attr(data-time-short);
+        display: block;
+        position: absolute;
+        bottom: 3px;
+        left: 8px;
+        font-size: 10px;
+        color: var(--text-muted);
+        opacity: 0.8;
+        pointer-events: none;
+    }
 }
-.msg-selected {
-    position: relative;
+
+/*
+ *  <C-k> Quick-Switcher
+ */
+
+#quick-switcher-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 999998;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: min(20vh, 160px);
 }
-/* Hide the inline compact-time to avoid overlap */
-.msg-selected.message-compact .compact-time {
-    display: none !important;
+.quick-switcher-box {
+    background: var(--bg-secondary, #2b2d31);
+    border-radius: var(--radius-lg, 4px);
+    width: min(480px, 90vw);
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    overflow: hidden;
+    border: 1px solid var(--border, #3f4147);
 }
-/* Show timestamp BELOW selected compact messages ONLY
-(regular messages already show time in the header) */
-.msg-selected.message-compact {
-    padding-bottom: 22px !important;
+#quick-switcher-input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 15px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border, #3f4147);
+    color: var(--text-primary, #dbdee1);
+    outline: none;
+    box-sizing: border-box;
 }
-.msg-selected.message-compact::after {
-    content: attr(data-time-short);
-    display: block;
-    position: absolute;
-    bottom: 3px;
-    left: 8px;
-    font-size: 10px;
-    color: var(--text-muted);
-    opacity: 0.8;
-    pointer-events: none;
+#quick-switcher-input::placeholder { color: var(--text-muted, #949ba4); }
+#quick-switcher-results {
+    max-height: 340px;
+    overflow-y: auto;
+    padding: 4px;
 }
+.quick-switcher-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm, 6px);
+    cursor: pointer;
+    color: var(--text-secondary, #b5bac1);
+    font-size: 14px;
+    gap: 8px;
+}
+.quick-switcher-item:hover,
+.quick-switcher-item.selected {
+    background: var(--bg-hover, #35373c);
+    color: var(--text-primary, #dbdee1);
+}
+.qs-badge {
+    margin-left: auto;
+    background: var(--danger, #ed4245);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
 }
