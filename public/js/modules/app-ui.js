@@ -68,6 +68,27 @@ export default {
                 this._sendMessage();
             }
 
+            // edit the last message that you sent
+            if (e.key === 'ArrowUp' && (msgInput.value.trim() === '')) {
+                const messages = document.getElementById('messages');
+                let nodes = messages.querySelectorAll('[data-msg-id]');
+                nodes = Array.from(nodes);
+                nodes = nodes.filter(e => parseInt(e.dataset.userId) === this.user.id);
+                if (nodes.length > 1) {
+                    let idx = 1;
+                    for (let i = 1; i < nodes.length; ++i) {
+                        if (!nodes[nodes.length - i].dataset.rawContent.startsWith('/uploads/')) {
+                            idx = i;
+                            break;
+                        }
+                    }
+                    this._startEditMessage(
+                        nodes[nodes.length - idx],
+                        parseInt(nodes[nodes.length - idx].dataset.msgId
+                        ));
+                }
+            }
+
         });
 
         msgInput.addEventListener('input', () => {

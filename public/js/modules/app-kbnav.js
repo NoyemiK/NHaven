@@ -30,10 +30,10 @@ export default {
         if (channel_list.length <= 1) { return; }
 
         let next_channel = current_channel + num;
-        if (next_channel < 0 || current_channel === -1) {
+        if (next_channel < 0) {
             next_channel = channel_list.length - 1;
         }
-        if (next_channel >= channel_list.length) {
+        if (next_channel >= channel_list.length || current_channel === -1) {
             next_channel = 0;
         }
         this.switchChannel(channel_list[next_channel].code);
@@ -58,10 +58,10 @@ export default {
         }
         let current_channel = channel_list.findIndex(c => c.code === this.currentChannel);
         let next_channel = current_channel + num;
-        if (next_channel < 0 || current_channel === -1) {
+        if (next_channel < 0) {
             next_channel = channel_list.length - 1;
         }
-        if (next_channel >= channel_list.length) {
+        if (next_channel >= channel_list.length || current_channel === -1) {
             next_channel = 0;
         }
         this.switchChannel(channel_list[next_channel].code);

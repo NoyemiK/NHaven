@@ -523,7 +523,8 @@ app.get('/', (req, res) => {
 });
 
 app.get('/app', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'app.html'));
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(__dirname, 'public', 'app.html'));
 });
 
 app.get('/games/flappy', (req, res) => {
