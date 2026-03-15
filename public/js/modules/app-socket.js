@@ -985,7 +985,7 @@ export default {
             list.querySelectorAll('.search-result-item').forEach(item => {
                 item.addEventListener('click', () => {
                     const msgId = item.dataset.msgId;
-                    const msgEl = document.querySelector(`[data-msg-id="${msgId}"]`);
+                    let msgEl = document.querySelector(`[data-msg-id="${msgId}"]:not(.search-result-item)`);
                     if (msgEl) {
                         msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         msgEl.classList.add('highlight-flash');

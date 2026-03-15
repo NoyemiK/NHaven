@@ -1327,7 +1327,7 @@ function setupSocketHandlers(io, db) {
                COALESCE(u.display_name, u.username, '[Deleted User]') as username, u.id as user_id
         FROM messages m LEFT JOIN users u ON m.user_id = u.id
         WHERE m.channel_id = ? AND m.content LIKE ? ESCAPE '\\'
-        ORDER BY m.created_at DESC LIMIT 25
+        ORDER BY m.created_at DESC LIMIT 40
       `).all(channel.id, `%${escapedQuery}%`);
 
       // Normalize SQLite UTC timestamps for search results
