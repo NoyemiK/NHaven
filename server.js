@@ -2162,129 +2162,131 @@ setupSocketHandlers(io, db);
 registerProcessCleanup();
 
 // ── Auto-cleanup interval (runs every 15 minutes) ───────
-function runAutoCleanup() {
-  try {
-    const getSetting = (key) => {
-      const row = db.prepare('SELECT value FROM server_settings WHERE key = ?').get(key);
-      return row ? row.value : null;
-    };
+function runAutoCleanup(force) {
+    try {
+        const getSetting = (key) => {
+            const row = db.prepare('SELECT value FROM server_settings WHERE key = ?').get(key);
+            return row ? row.value : null;
+        };
 
-    const enabled = getSetting('cleanup_enabled');
-    if (enabled !== 'true') return;
+        const enabled = getSetting('cleanup_enabled');
+        if (!force) return;
 
-    const maxAgeDays = parseInt(getSetting('cleanup_max_age_days') || '0');
-    const maxSizeMb = parseInt(getSetting('cleanup_max_size_mb') || '0');
-    let totalDeleted = 0;
+        // Really crummy hack
+        // TODO(yemita): unfuck this someday
+        const maxAgeDays = 10;
+        const maxSizeMb = parseInt(getSetting('cleanup_max_size_mb') || '0');
+        let totalDeleted = 0;
 
-    // 1. Delete messages older than N days (skip archived/protected messages and exempt channels)
-    if (maxAgeDays > 0) {
-      // Delete reactions for old messages first
-      db.prepare(`
+        // 1. Delete messages older than N days (skip archived/protected messages and exempt channels)
+        if (maxAgeDays > 0) {
+            // Delete reactions for old messages first
+            db.prepare(`
         DELETE FROM reactions WHERE message_id IN (
           SELECT id FROM messages WHERE created_at < datetime('now', ?) AND is_archived = 0
           AND channel_id NOT IN (SELECT id FROM channels WHERE cleanup_exempt = 1)
         )
       `).run(`-${maxAgeDays} days`);
-      const result = db.prepare(
-        "DELETE FROM messages WHERE created_at < datetime('now', ?) AND is_archived = 0 AND channel_id NOT IN (SELECT id FROM channels WHERE cleanup_exempt = 1)"
-      ).run(`-${maxAgeDays} days`);
-      totalDeleted += result.changes;
-    }
-
-    // 2. If total DB size exceeds maxSizeMb, trim oldest messages (skip archived)
-    if (maxSizeMb > 0) {
-      const dbPath = DB_PATH;
-      const stats = require('fs').statSync(dbPath);
-      const sizeMb = stats.size / (1024 * 1024);
-      if (sizeMb > maxSizeMb) {
-        // Delete oldest 10% of non-archived messages to bring size down
-        const totalCount = db.prepare('SELECT COUNT(*) as cnt FROM messages WHERE is_archived = 0 AND channel_id NOT IN (SELECT id FROM channels WHERE cleanup_exempt = 1)').get().cnt;
-        const deleteCount = Math.max(Math.floor(totalCount * 0.1), 100);
-        const oldestIds = db.prepare(
-          'SELECT id FROM messages WHERE is_archived = 0 AND channel_id NOT IN (SELECT id FROM channels WHERE cleanup_exempt = 1) ORDER BY created_at ASC LIMIT ?'
-        ).all(deleteCount).map(r => r.id);
-        if (oldestIds.length > 0) {
-          // Chunk deletes to avoid creating extremely long SQL statements
-          const CHUNK_SIZE = 1000;
-          for (let i = 0; i < oldestIds.length; i += CHUNK_SIZE) {
-            const chunk = oldestIds.slice(i, i + CHUNK_SIZE);
-            const placeholders = chunk.map(() => '?').join(',');
-            db.prepare(`DELETE FROM reactions WHERE message_id IN (${placeholders})`).run(...chunk);
-            db.prepare(`DELETE FROM messages WHERE id IN (${placeholders})`).run(...chunk);
-          }
-          totalDeleted += oldestIds.length;
+            const result = db.prepare(
+                "DELETE FROM messages WHERE created_at < datetime('now', ?) AND is_archived = 0 AND channel_id NOT IN (SELECT id FROM channels WHERE cleanup_exempt = 1)"
+            ).run(`-${maxAgeDays} days`);
+            totalDeleted += result.changes;
         }
-      }
-    }
 
-    // Also clean up old uploaded files if age cleanup is set
-    if (maxAgeDays > 0) {
-      const uploadsDir = UPLOADS_DIR;
-      if (require('fs').existsSync(uploadsDir)) {
-        // Build a set of protected filenames (server icon, avatars, emojis, sounds)
-        const protectedFiles = new Set();
-        const iconRow = db.prepare("SELECT value FROM server_settings WHERE key = 'server_icon'").get();
-        if (iconRow?.value) protectedFiles.add(path.basename(iconRow.value));
-        db.prepare("SELECT avatar FROM users WHERE avatar IS NOT NULL AND avatar != ''").all()
-          .forEach(r => protectedFiles.add(path.basename(r.avatar)));
-        try {
-          db.prepare("SELECT url FROM custom_emojis").all()
-            .forEach(r => protectedFiles.add(path.basename(r.url)));
-        } catch { /* table may not exist */ }
-        try {
-          db.prepare("SELECT url FROM custom_sounds").all()
-            .forEach(r => protectedFiles.add(path.basename(r.url)));
-        } catch { /* table may not exist */ }
-        // Webhook/bot avatars
-        try {
-          db.prepare("SELECT avatar_url FROM webhooks WHERE avatar_url IS NOT NULL AND avatar_url != ''").all()
-            .forEach(r => protectedFiles.add(path.basename(r.avatar_url)));
-        } catch { /* table may not exist */ }
-
-        const cutoff = Date.now() - (maxAgeDays * 24 * 60 * 60 * 1000);
-        const files = require('fs').readdirSync(uploadsDir);
-        let filesDeleted = 0;
-        files.forEach(f => {
-          if (protectedFiles.has(f)) return; // never delete critical files
-          try {
-            const fpath = require('path').join(uploadsDir, f);
-            const stat = require('fs').statSync(fpath);
-            if (stat.mtimeMs < cutoff) {
-              require('fs').unlinkSync(fpath);
-              filesDeleted++;
+        // 2. If total DB size exceeds maxSizeMb, trim oldest messages (skip archived)
+        if (maxSizeMb > 0) {
+            const dbPath = DB_PATH;
+            const stats = require('fs').statSync(dbPath);
+            const sizeMb = stats.size / (1024 * 1024);
+            if (sizeMb > maxSizeMb) {
+                // Delete oldest 10% of non-archived messages to bring size down
+                const totalCount = db.prepare('SELECT COUNT(*) as cnt FROM messages WHERE is_archived = 0 AND channel_id NOT IN (SELECT id FROM channels WHERE cleanup_exempt = 1)').get().cnt;
+                const deleteCount = Math.max(Math.floor(totalCount * 0.1), 100);
+                const oldestIds = db.prepare(
+                    'SELECT id FROM messages WHERE is_archived = 0 AND channel_id NOT IN (SELECT id FROM channels WHERE cleanup_exempt = 1) ORDER BY created_at ASC LIMIT ?'
+                ).all(deleteCount).map(r => r.id);
+                if (oldestIds.length > 0) {
+                    // Chunk deletes to avoid creating extremely long SQL statements
+                    const CHUNK_SIZE = 1000;
+                    for (let i = 0; i < oldestIds.length; i += CHUNK_SIZE) {
+                        const chunk = oldestIds.slice(i, i + CHUNK_SIZE);
+                        const placeholders = chunk.map(() => '?').join(',');
+                        db.prepare(`DELETE FROM reactions WHERE message_id IN (${placeholders})`).run(...chunk);
+                        db.prepare(`DELETE FROM messages WHERE id IN (${placeholders})`).run(...chunk);
+                    }
+                    totalDeleted += oldestIds.length;
+                }
             }
-          } catch { /* skip */ }
-        });
-        if (filesDeleted > 0) {
-          console.log(`🗑️  Auto-cleanup: removed ${filesDeleted} old uploaded files`);
         }
 
-        // Clean up deleted-attachments folder (files moved here when messages were deleted)
-        const deletedDir = path.join(UPLOADS_DIR, 'deleted-attachments');
-        if (require('fs').existsSync(deletedDir)) {
-          let daDeleted = 0;
-          for (const f of require('fs').readdirSync(deletedDir)) {
-            try {
-              const fp = require('path').join(deletedDir, f);
-              if (require('fs').statSync(fp).mtimeMs < cutoff) {
-                require('fs').unlinkSync(fp);
-                daDeleted++;
-              }
-            } catch { /* skip */ }
-          }
-          if (daDeleted > 0) {
-            console.log(`🗑️  Auto-cleanup: removed ${daDeleted} files from deleted-attachments`);
-          }
-        }
-      }
-    }
+        // Also clean up old uploaded files if age cleanup is set
+        if (maxAgeDays > 0) {
+            const uploadsDir = UPLOADS_DIR;
+            if (require('fs').existsSync(uploadsDir)) {
+                // Build a set of protected filenames (server icon, avatars, emojis, sounds)
+                const protectedFiles = new Set();
+                const iconRow = db.prepare("SELECT value FROM server_settings WHERE key = 'server_icon'").get();
+                if (iconRow?.value) protectedFiles.add(path.basename(iconRow.value));
+                db.prepare("SELECT avatar FROM users WHERE avatar IS NOT NULL AND avatar != ''").all()
+                    .forEach(r => protectedFiles.add(path.basename(r.avatar)));
+                try {
+                    db.prepare("SELECT filename FROM custom_emojis").all()
+                        .forEach(r => protectedFiles.add(path.basename(r.filename)));
+                } catch { /* table may not exist */ }
+                try {
+                    db.prepare("SELECT filename FROM custom_sounds").all()
+                        .forEach(r => protectedFiles.add(path.basename(r.filename)));
+                } catch { /* table may not exist */ }
+                // Webhook/bot avatars
+                try {
+                    db.prepare("SELECT avatar_url FROM webhooks WHERE avatar_url IS NOT NULL AND avatar_url != ''").all()
+                        .forEach(r => protectedFiles.add(path.basename(r.avatar_url)));
+                } catch { /* table may not exist */ }
 
-    if (totalDeleted > 0) {
-      console.log(`🗑️  Auto-cleanup: deleted ${totalDeleted} old messages`);
+                const cutoff = Date.now() - (maxAgeDays * 24 * 60 * 60 * 1000);
+                const files = require('fs').readdirSync(uploadsDir);
+                let filesDeleted = 0;
+                files.forEach(f => {
+                    if (protectedFiles.has(f)) return; // never delete critical files
+                    try {
+                        const fpath = require('path').join(uploadsDir, f);
+                        const stat = require('fs').statSync(fpath);
+                        if (stat.mtimeMs < cutoff) {
+                            require('fs').unlinkSync(fpath);
+                            filesDeleted++;
+                        }
+                    } catch { /* skip */ }
+                });
+                if (filesDeleted > 0) {
+                    console.log(`🗑️  Auto-cleanup: removed ${filesDeleted} old uploaded files`);
+                }
+
+                // Clean up deleted-attachments folder (files moved here when messages were deleted)
+                const deletedDir = path.join(UPLOADS_DIR, 'deleted-attachments');
+                if (require('fs').existsSync(deletedDir)) {
+                    let daDeleted = 0;
+                    for (const f of require('fs').readdirSync(deletedDir)) {
+                        try {
+                            const fp = require('path').join(deletedDir, f);
+                            if (require('fs').statSync(fp).mtimeMs < cutoff) {
+                                require('fs').unlinkSync(fp);
+                                daDeleted++;
+                            }
+                        } catch { /* skip */ }
+                    }
+                    if (daDeleted > 0) {
+                        console.log(`🗑️  Auto-cleanup: removed ${daDeleted} files from deleted-attachments`);
+                    }
+                }
+            }
+        }
+
+        if (totalDeleted > 0) {
+            console.log(`🗑️  Auto-cleanup: deleted ${totalDeleted} old messages`);
+        }
+    } catch (err) {
+        console.error('Auto-cleanup error:', err);
     }
-  } catch (err) {
-    console.error('Auto-cleanup error:', err);
-  }
 }
 
 // Run cleanup every 15 minutes

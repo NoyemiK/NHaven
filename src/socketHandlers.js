@@ -3514,16 +3514,16 @@ function setupSocketHandlers(io, db) {
     // ═══════════════ ADMIN: RUN CLEANUP NOW ═════════════════
 
     socket.on('run-cleanup-now', () => {
-      if (!socket.user.isAdmin) {
-        return socket.emit('error-msg', 'Only admins can run cleanup');
-      }
-      // Trigger the global cleanup function exposed on the server
-      if (typeof global.runAutoCleanup === 'function') {
-        global.runAutoCleanup();
-        socket.emit('error-msg', 'Cleanup ran — check server console for details');
-      } else {
-        socket.emit('error-msg', 'Cleanup function not available');
-      }
+        if (!socket.user.isAdmin) {
+            return socket.emit('error-msg', 'Only admins can run cleanup');
+        }
+        // Trigger the global cleanup function exposed on the server
+        if (typeof global.runAutoCleanup === 'function') {
+            global.runAutoCleanup('force');
+            socket.emit('error-msg', 'Cleanup ran — check server console for details');
+        } else {
+            socket.emit('error-msg', 'Cleanup function not available');
+        }
     });
 
     // ═══════════════ WEBHOOKS / BOT INTEGRATIONS ════════════
