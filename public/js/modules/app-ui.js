@@ -1072,6 +1072,11 @@ export default {
                 e.preventDefault();
                 this._openQuickSwitcher();
             }
+            // <end> goes to the very bottom
+            if (e.key === 'End') {
+                e.preventDefault();
+                this.socket.emit('get-messages', { code: this.currentChannel });
+            }
 
         });
 

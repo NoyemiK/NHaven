@@ -348,7 +348,7 @@ export default {
             this._coupledToBottom = true;
             msgContainer.addEventListener('scroll', () => {
                 const dist = msgContainer.scrollHeight - msgContainer.clientHeight - msgContainer.scrollTop;
-                if (dist < 150) {
+                if (dist < 150 && this._noMoreFuture) {
                     this._coupledToBottom = true;
                 } else if (dist > 300) {
                     // Hysteresis: only uncouple when scrolled significantly away,
