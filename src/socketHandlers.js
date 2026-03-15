@@ -1177,7 +1177,7 @@ function setupSocketHandlers(io, db) {
       if (!code || !/^[a-f0-9]{8}$/i.test(code)) return;
       const before = isInt(data.before) ? data.before : null;
       const after  = isInt(data.after)  ? data.after  : null;
-      const limit = isInt(data.limit) && data.limit > 0 && data.limit <= 100 ? data.limit : 80;
+      const limit = isInt(data.limit) && data.limit > 0 && data.limit <= 100 ? data.limit : 150;
 
       const channel = db.prepare('SELECT id FROM channels WHERE code = ?').get(code);
       if (!channel) return;

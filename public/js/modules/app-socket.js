@@ -348,7 +348,7 @@ export default {
             this._coupledToBottom = true;
             msgContainer.addEventListener('scroll', () => {
                 const dist = msgContainer.scrollHeight - msgContainer.clientHeight - msgContainer.scrollTop;
-                if (dist < 150 && this._noMoreFuture) {
+                if (dist <= 300 && this._noMoreFuture) {
                     this._coupledToBottom = true;
                 } else if (dist > 300) {
                     // Hysteresis: only uncouple when scrolled significantly away,
@@ -360,7 +360,7 @@ export default {
             this._historyDebounce = 0; // timestamp of last history request
             msgContainer.addEventListener('scroll', () => {
                 const now = Date.now();
-                if (msgContainer.scrollTop < 200 && !this._noMoreHistory && !this._loadingHistory && this._oldestMsgId && this.currentChannel && now - this._historyDebounce > 300) {
+                if (msgContainer.scrollTop < 500 && !this._noMoreHistory && !this._loadingHistory && this._oldestMsgId && this.currentChannel && now - this._historyDebounce > 300) {
                     this._loadingHistory = true;
                     this._historyBefore = this._oldestMsgId;
                     this._historyDebounce = now;
