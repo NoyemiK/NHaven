@@ -1073,7 +1073,7 @@ export default {
                 this._openQuickSwitcher();
             }
             // <end> goes to the very bottom
-            if (e.key === 'End') {
+            if (e.key === 'End' && !this._noMoreFuture) {
                 e.preventDefault();
                 this.socket.emit('get-messages', { code: this.currentChannel });
             }
